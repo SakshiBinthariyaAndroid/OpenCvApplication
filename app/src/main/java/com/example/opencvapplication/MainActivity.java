@@ -1,8 +1,5 @@
 package com.example.opencvapplication;
 
-import static android.content.ContentValues.TAG;
-
-import static org.opencv.core.Core.BORDER_DEFAULT;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -11,12 +8,9 @@ import androidx.core.content.ContextCompat;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
-import android.view.Surface;
-import android.view.SurfaceView;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -24,19 +18,21 @@ import android.widget.Toast;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
-import org.opencv.android.JavaCameraView;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
+import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
+import org.opencv.dnn.Dnn;
 import org.opencv.imgproc.Imgproc;
 
 import java.nio.charset.CoderResult;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -179,7 +175,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
         mDetector.setHsvColor(mBlobColorHsv);
 
-        Imgproc.resize(mDetector.getSpectrum(), mSpectrum, SPECTRUM_SIZE, 0, 0, Imgproc.INTER_LINEAR_EXACT);
+      //  Imgproc.resize(mDetector.getSpectrum(), mSpectrum, SPECTRUM_SIZE, 0, 0, Imgproc.INTER_LINEAR_EXACT);
 
         mIsColorSelected = true;
 
@@ -198,7 +194,10 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         mBlobColorRgba = new Scalar(255);
         mBlobColorHsv = new Scalar(255);
         SPECTRUM_SIZE = new Size(200, 64);
-        CONTOUR_COLOR = new Scalar(255, 0, 0, 255);
+      //  CONTOUR_COLOR = new Scalar(255, 0, 0, 255);
+       CONTOUR_COLOR = new Scalar(0, 255, 0);
+
+
     }
 
     @Override
@@ -208,9 +207,26 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-        mRgba = inputFrame.rgba();
+         mRgba = inputFrame.rgba();
 
-        if (mIsColorSelected) {
+/*// init
+        List<MatOfPoint> contours = new ArrayList<>();
+      //  Mat hierarchy = new Mat();
+
+// find contours
+       // Imgproc.findContours(mRgba, contours, mRgba, Imgproc.RETR_CCOMP, Imgproc.CHAIN_APPROX_SIMPLE);
+
+// if any contour exist...
+        if (mRgba.size().height > 0 && mRgba.size().width > 0)
+        {
+            // for each contour, display it in blue
+            for (int idx = 0; idx >= 0; idx = (int) mRgba.get(0, idx)[0])
+            {
+                Imgproc.drawContours(mRgba, contours, idx, new Scalar(250, 0, 0));
+            }
+        }*/
+
+       if (mIsColorSelected) {
             mDetector.process(mRgba);
             List<MatOfPoint> contours = mDetector.getContours();
             Log.e(TAG, "Contours count: " + contours.size());
@@ -221,15 +237,39 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
             Mat spectrumLabel = mRgba.submat(4, 4 + mSpectrum.rows(), 70, 70 + mSpectrum.cols());
             mSpectrum.copyTo(spectrumLabel);
+
+
+
+
         }
 
         return mRgba;
+
+
+
+
+
+
+        /*Mat blurredImage = new Mat();
+        Mat hsvImage = new Mat();
+        Mat mask = new Mat();
+        Mat morphOutput = new Mat();
+
+// remove some noise
+      //  Imgproc.blur(frame, blurredImage, new Size(7, 7));
+
+// convert the frame to HSV
+        Imgproc.cvtColor(blurredImage, hsvImage, Imgproc.COLOR_BGR2HSV);
+*/
+     //   return mRgba;
     }
 
     private Scalar converScalarHsv2Rgba(Scalar hsvColor) {
         Mat pointMatRgba = new Mat();
         Mat pointMatHsv = new Mat(1, 1, CvType.CV_8UC3, hsvColor);
-        Imgproc.cvtColor(pointMatHsv, pointMatRgba, Imgproc.COLOR_HSV2RGB_FULL, 4);
+       Imgproc.cvtColor(pointMatHsv, pointMatRgba, Imgproc.COLOR_HSV2RGB_FULL, 4);
+
+       // Imgproc.cvtColor(pointMatHsv, pointMatRgba, Imgproc.COLOR_BGR2GRAY);
 
         return new Scalar(pointMatRgba.get(0, 0));
     }
