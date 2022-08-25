@@ -1,5 +1,6 @@
 package org.opencv.android;
 
+import java.lang.reflect.Method;
 import java.util.List;
 
 import android.content.Context;
@@ -209,9 +210,9 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                         mSurfaceTexture = new SurfaceTexture(MAGIC_TEXTURE_ID);
                         mCamera.setPreviewTexture(mSurfaceTexture);
                     } else
-                       mCamera.setPreviewDisplay(null);
-
-                    /* Finally we are ready to start the preview */
+                    mCamera.setPreviewDisplay(null);
+                   setDisplayOrientation(mCamera, 90);
+                  //  mCamera.setPreviewDisplay(getHolder());                    /* Finally we are ready to start the preview */
                     Log.d(TAG, "startPreview");
                     mCamera.startPreview();
                 }
@@ -374,6 +375,19 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                 }
             } while (!mStopThread);
             Log.d(TAG, "Finish processing thread");
+        }
+    }
+
+    protected void setDisplayOrientation(Camera camera, int angle){
+        Method downPolymorphic;
+        try
+        {
+            downPolymorphic = camera.getClass().getMethod("setDisplayOrientation", new Class[] { int.class });
+            if (downPolymorphic != null)
+                downPolymorphic.invoke(camera, new Object[] { angle });
+        }
+        catch (Exception e1)
+        {
         }
     }
 }
