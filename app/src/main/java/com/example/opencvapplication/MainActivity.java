@@ -20,6 +20,7 @@ import android.widget.Toast;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
+import org.opencv.android.JavaCameraView;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Core;
@@ -87,10 +88,10 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         } else {
             // prompt system dialog
             Log.d(TAG, "Permission prompt");
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, MY_CAMERA_REQUEST_CODE);
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA, Manifest.permission.CAMERA}, MY_CAMERA_REQUEST_CODE);
         }
 
-
+        // To check open cv is configured or not
         if (OpenCVLoader.initDebug()) {
 
             Toast.makeText(this, "OpenCv configured successfully", Toast.LENGTH_SHORT).show();
@@ -115,7 +116,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     @Override
     public void onResume() {
         super.onResume();
-
         Log.d(TAG, "onResume--------------------");
 
         if (!OpenCVLoader.initDebug()) {
@@ -126,6 +126,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }
     }
+
 
     public void onDestroy() {
         super.onDestroy();
@@ -151,56 +152,35 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-
-// if any contour exist...
-      /*  if (mRgba.size().height > 0 && mRgba.size().width > 0)
-        {
-            // for each contour, display it in blue
-            for (int idx = 0; idx >= 0; idx = (int) mRgba.get(0, idx)[0])
-            {
-                Imgproc.drawContours(mRgba, contours, idx, new Scalar(250, 0, 0));
-            }
-        }*/
-
         Log.d(TAG, "onCameraFrame--------------------");
         mRgba = inputFrame.rgba();
-        Mat touchedRegionHsv = new Mat();
+        Mat processedMat = new Mat();
 
-
-        Mat blurred = new Mat();
 
         // Blur an image using a Gaussian filter
-        Imgproc.GaussianBlur(mRgba, blurred, new Size(7, 7), 1);
+        Imgproc.GaussianBlur(mRgba, processedMat, new Size(7, 7), 1);
+        Imgproc.cvtColor(processedMat, processedMat, Imgproc.COLOR_RGB2HSV_FULL);
 
-        Imgproc.cvtColor(blurred, touchedRegionHsv, Imgproc.COLOR_RGB2HSV_FULL);
+        // InRange Thresholding
+        Core.inRange(processedMat, new Scalar(29, 86, 6),
+                new Scalar(64, 255, 255), processedMat);
 
+        // Preparing the kernel matrix object
+        Mat kernel1 = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size((2 * 2) + 1, (2 * 2) + 1));
+        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size((5 * 5) + 2, (5 * 5) + 2));
 
-//// InRange Thresholding
+        // Applying erosion on the Image
+        Imgproc.erode(processedMat, processedMat, kernel1);
 
-        Mat thresh = new Mat();
+        // Applying dilation on the Image
+        Imgproc.dilate(processedMat, processedMat, kernel);
 
-
-        Core.inRange(touchedRegionHsv, new Scalar(29, 86, 6),
-                new Scalar(64, 255, 255), thresh);
-
-
-//Creating destination matrix
-        Mat erode = new Mat();  //(src.rows(), src.cols(), src.type());
-//Preparing the kernel matrix object
-        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size((2 * 2) + 1, (2 * 2) + 1));
-//Applying erosion on the Image
-        Imgproc.erode(thresh, erode, kernel);
-
-        Mat dilate = new Mat();
-        Imgproc.dilate(erode, dilate, kernel);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            markOuterContour(dilate, mRgba);
+            markOuterContour(processedMat, mRgba);
         }
 
-
         return mRgba;
-
 
     }
 
@@ -236,10 +216,21 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                 Imgproc.CHAIN_APPROX_NONE
         );
 
+
+       /* for(int i=0;i<allContours.size();i++){
+
+            System.out.println("allContours-------"+allContours.get(i));
+            System.out.println("allContoursallContours-------"+Imgproc.contourArea(allContours.get(i)));
+
+        }*/
+
+
         // Filter out noise and display contour area value
         final List<MatOfPoint> filteredContours = allContours.stream()
                 .filter(contour -> {
                     final double value = Imgproc.contourArea(contour);
+
+                    System.out.println("value-------"+value);
                     final Rect rect = Imgproc.boundingRect(contour);
 
                     final boolean isNotNoise = value > 1000;
@@ -254,7 +245,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                 -1, // Negative value indicates that we want to draw all of contours
                 // new Scalar(124, 252, 0), // Green color
                 new Scalar(50, 50, 50), // Green color
-                5
+                6
         );
 
 
