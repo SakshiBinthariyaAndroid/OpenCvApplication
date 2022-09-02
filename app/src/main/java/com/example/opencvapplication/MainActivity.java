@@ -217,15 +217,61 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         );
 
 
-       /* for(int i=0;i<allContours.size();i++){
+         /*
+// java.util.ArrayList<Point> approx = new java.util.ArrayList<Point>();
+          MatOfPoint2f approxCurve = new MatOfPoint2f();
+        System.out.println("Contours-------"+allContours.size());
+
+//        Mat dst = img.clone();
+        for(int i=0;i<allContours.size();i++){
 
             System.out.println("allContours-------"+allContours.get(i));
             System.out.println("allContoursallContours-------"+Imgproc.contourArea(allContours.get(i)));
 
-        }*/
+            MatOfPoint2f contour2f = new MatOfPoint2f(allContours.get(i).toArray());
+            double approxDistance = Imgproc.arcLength(contour2f,  true)*0.01;
+            Imgproc.approxPolyDP(contour2f, approxCurve, approxDistance, true);
+         //   centers[i] = new Point();
+            MatOfPoint points = new MatOfPoint(approxCurve.toArray());
+
+            System.out.println("points-------"+points);
+            System.out.println("approxCurve-------"+approxCurve.toArray().length);
 
 
-        // Filter out noise and display contour area value
+
+//if the contour has an circularness shape to it
+            if (approxCurve.toArray().length >= 8 && approxCurve.toArray().length <= 18) {
+                //insert codes here
+            }
+
+        }
+
+ */
+
+
+
+        /*
+
+        for (MatOfPoint cnt : contours) {
+
+            MatOfPoint2f curve = new MatOfPoint2f(cnt.toArray());
+
+            Imgproc.approxPolyDP(curve, approxCurve, 0.02 * Imgproc.arcLength(curve, true), true);
+
+            int numberVertices = (int) approxCurve.total();
+
+            double contourArea = Imgproc.contourArea(cnt);
+
+            if (Math.abs(contourArea) < 100) {
+                continue;
+            }
+*/
+
+
+
+
+
+            // Filter out noise and display contour area value
         final List<MatOfPoint> filteredContours = allContours.stream()
                 .filter(contour -> {
                     final double value = Imgproc.contourArea(contour);
@@ -238,10 +284,11 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                     return isNotNoise;
                 }).collect(Collectors.toList());
 
+
         // Mark contours
         Imgproc.drawContours(
                 originalImage,
-                filteredContours,
+                allContours,
                 -1, // Negative value indicates that we want to draw all of contours
                 // new Scalar(124, 252, 0), // Green color
                 new Scalar(50, 50, 50), // Green color
@@ -251,3 +298,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
     }
 }
+
+//https://github.com/aashari/android-opencv-rectangle-detector/blob/master/app/src/main/java/id/aashari/code/opencvrectangledetection/MainActivity.java
+//https://www.anycodings.com/1questions/3127283/opencv-c-conversion-to-java-for-shape-detection-issues
+//https://stackoverflow.com/questions/45049896/how-to-count-non-zero-pixels-inside-a-contour-opencv
